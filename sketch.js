@@ -10,7 +10,8 @@ function setup() {
   frameRate(100);
   // Initialize the grid with random values
   grid = createRandomGrid();
-  bndry = createRandomBoundaries();
+  // bndry = createRandomBoundaries();
+  bndry = createRoomBoundaries();
   bbox = getBoundingBox(bndry);
   console.log("bbox", bbox);
   bbox, bndry, grid;
@@ -67,9 +68,12 @@ function getBoundingBox(arr) {
     let { x, y, w, h } = o;
     if (x < minX) minX = x;
     if (y < minY) minY = y;
-    if (x + w > maxX) maxX = x + h;
+    if (x + w > maxX) {
+      maxX = x + w;
+    }
     if (y + h > maxY) maxY = y + h;
   });
+  console.log("bbox", minX, maxX, minY, maxY);
   return { minX, maxX, minY, maxY };
 }
 
@@ -98,6 +102,28 @@ function createRandomBoundaries() {
     };
     arr.push(o);
   }
+
+  return arr;
+}
+function createRoomBoundaries() {
+  let arr = [];
+  let num = floor(random(10));
+
+  let o = {
+    x: 5,
+    y: 100,
+    w: 150,
+    h: 50,
+  };
+  arr.push(o);
+
+  let i = {
+    x: 65,
+    y: 250,
+    w: 150,
+    h: 50,
+  };
+  arr.push(i);
 
   return arr;
 }
@@ -137,9 +163,10 @@ function draw() {
   for (var i = 0; i < cols; i++) {
     for (var j = 0; j < rows; j++) {
       // Count the number of live neighbors
-      var neighbors = countNeighbors(grid, i, j);
+      // var neighbors = countNeighborsN(grid, i, j, 3); // count 5 cells
       if (grid[i][j] === 1 /*&& neighbors > 1*/) {
-        fillNeighbours(grid, next, i, j, bbox);
+        console.log("fill");
+        fillNeighbors(grid, next, i, j, bbox);
       }
       if (grid[i][j] == 1 /*&& neighbors > 1*/) {
         next[i][j] = 1;
@@ -215,61 +242,28 @@ function drawBBOX({ minX, maxX, minY, maxY }) {
 //   grid = next;
 // }
 
-function fillNeighbours(grid, next, i, j, bbox) {
-  if (j != rows && grid[i][j + 1] == 0) {
-    if (
-      checkBoundary(
-        i * resolution,
-        (j + 1) * resolution,
-        resolution,
-        resolution,
-        bndry
-      ) &&
-      withinBBOX(bbox, i, j, resolution)
-    ) {
-      next[i][j + 1] = 1;
-    }
-  }
-  if (j != 0 && grid[i][j - 1] == 0) {
-    if (
-      checkBoundary(
-        i * resolution,
-        (j - 1) * resolution,
-        resolution,
-        resolution,
-        bndry
-      ) &&
-      withinBBOX(bbox, i, j, resolution)
-    ) {
-      next[i][j - 1] = 1;
-    }
-  }
-  if (i != 0 && grid[i - 1][j] == 0) {
-    if (
-      checkBoundary(
-        (i - 1) * resolution,
-        j * resolution,
-        resolution,
-        resolution,
-        bndry
-      ) &&
-      withinBBOX(bbox, i, j, resolution)
-    ) {
-      next[i - 1][j] = 1;
-    }
-  }
-  if (i != grid.length - 1 && grid[i + 1][j] == 0) {
-    if (
-      checkBoundary(
-        (i + 1) * resolution,
-        j * resolution,
-        resolution,
-        resolution,
-        bndry
-      ) &&
-      withinBBOX(bbox, i, j, resolution)
-    ) {
-      next[i + 1][j] = 1;
+function fillNeighbors(grid, next, x, y, bbox, n = 1) {
+  for (var i = -n; i < n + 1; i++) {
+    for (var j = -n; j < n + 1; j++) {
+      if (x + i < 0 || y + j < 0 || x + i > cols || y + j > rows) {
+        continue;
+      }
+      var col = (x + i + cols) % cols;
+      var row = (y + j + rows) % rows;
+      var neighbors = countNeighborsN(grid, x, y, n);
+      if (
+        checkBoundary(
+          col * resolution,
+          row * resolution,
+          resolution,
+          resolution,
+          bndry
+        ) &&
+        withinBBOX(bbox, col, row, resolution) &&
+        neighbors < n * 4 + 2
+      ) {
+        next[col][row] = 1;
+      }
     }
   }
 }
@@ -304,6 +298,19 @@ function countNeighbors(grid, x, y) {
   var sum = 0;
   for (var i = -1; i < 2; i++) {
     for (var j = -1; j < 2; j++) {
+      var col = (x + i + cols) % cols;
+      var row = (y + j + rows) % rows;
+      sum += grid[col][row];
+    }
+  }
+  sum -= grid[x][y];
+  return sum;
+}
+function countNeighborsN(grid, x, y, n) {
+  var sum = 0;
+  for (var i = -n; i < n + 1; i++) {
+    for (var j = -n; j < n + 1; j++) {
+      if (x + i < 0 || y + j < 0 || x + i > cols || y + j > rows) continue;
       var col = (x + i + cols) % cols;
       var row = (y + j + rows) % rows;
       sum += grid[col][row];
