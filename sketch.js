@@ -1,5 +1,5 @@
 // Set the size of the grid
-var colors = ["#B5E1DC", "#F5E68B", "#C5C5E2", "#ECB7E4", "#DBFCAD", "#FFCF9F"];
+var colors = ['#B5E1DC', '#F5E68B', '#C5C5E2', '#ECB7E4', '#DBFCAD', '#FFCF9F'];
 var resolution = 10;
 // Calculate the number of rows and columns in the grid based on the size of the canvas
 var rows, cols, grid, bndry;
@@ -13,14 +13,8 @@ function setup() {
   // bndry = createRandomBoundaries();
   bndry = createRoomBoundaries();
   bbox = getBoundingBox(bndry);
-  console.log("bbox", bbox);
   bbox, bndry, grid;
-}
-
-function numIslands(grid) {
-  let rows = grid.length();
-  let cols = grid[0].length();
-  const set = new Set();
+  getStartingPoint(bbox, bndry, grid);
 }
 
 function getStartingPoint({ minX, minY, maxX, maxY }, bndry, grid) {
@@ -29,7 +23,7 @@ function getStartingPoint({ minX, minY, maxX, maxY }, bndry, grid) {
   let jStart = Math.floor(minY / resolution);
   let iEnd = Math.floor(maxX / resolution);
   let jEnd = Math.floor(maxY / resolution);
-  let maxIteration = 100;
+  let maxIteration = 500;
   for (let i = 0; i < maxIteration; i++) {
     const i = getRandomInt(iStart, iEnd);
     const j = getRandomInt(jStart, jEnd);
@@ -73,7 +67,7 @@ function getBoundingBox(arr) {
     }
     if (y + h > maxY) maxY = y + h;
   });
-  console.log("bbox", minX, maxX, minY, maxY);
+  console.log('bbox', minX, maxX, minY, maxY);
   return { minX, maxX, minY, maxY };
 }
 
@@ -128,7 +122,7 @@ function createRoomBoundaries() {
   return arr;
 }
 function mousePressed() {
-  console.log("mouse", mouseX, mouseY);
+  console.log('mouse', mouseX, mouseY);
   const row = Math.floor(mouseY / resolution);
   const col = Math.floor(mouseX / resolution);
 
@@ -141,7 +135,7 @@ function draw() {
   for (var i = 0; i < cols; i++) {
     for (var j = 0; j < rows; j++) {
       if (grid[i][j] == 1) {
-        fill("#FFCF9F");
+        fill('#FFCF9F');
       } else {
         fill(255);
       }
@@ -149,7 +143,7 @@ function draw() {
       rect(i * resolution, j * resolution, resolution, resolution);
     }
   }
-  fill("red");
+  fill('red');
   bndry.forEach((o) => {
     let { x, y, w, h } = o;
     rect(x, y, w, h);
@@ -165,7 +159,7 @@ function draw() {
       // Count the number of live neighbors
       // var neighbors = countNeighborsN(grid, i, j, 3); // count 5 cells
       if (grid[i][j] === 1 /*&& neighbors > 1*/) {
-        console.log("fill");
+        console.log('fill');
         fillNeighbors(grid, next, i, j, bbox);
       }
       if (grid[i][j] == 1 /*&& neighbors > 1*/) {
@@ -173,7 +167,7 @@ function draw() {
       }
     }
   }
-  console.log("set next");
+  console.log('set next');
   // Set the new grid as the current grid
   drawBBOX(bbox);
   grid = next;
@@ -187,60 +181,6 @@ function drawBBOX({ minX, maxX, minY, maxY }) {
   rect(minX, minY, w, h);
   strokeWeight(1);
 }
-// function draw() {
-//   // Draw the grid
-//   background(255);
-//   for (var i = 0; i < cols; i++) {
-//     for (var j = 0; j < rows; j++) {
-//       if (grid[i][j] == 1) {
-//         fill(0, 100);
-//       } else {
-//         fill(255);
-//       }
-//       stroke(0);
-//       rect(i * resolution, j * resolution, resolution, resolution);
-//     }
-//   }
-//   fill("red");
-//   bndry.forEach((o) => {
-//     let { x, y, w, h } = o;
-//     rect(x, y, w, h);
-//   });
-//   // Create a new grid to hold the updated cell values
-//   var next = new Array(cols);
-//   for (var i = 0; i < cols; i++) {
-//     next[i] = new Array(rows); // creates a new array
-//   }
-//   //   console.log("next", next);
-//   // Calculate the new cell values
-//   for (var i = 0; i < cols; i++) {
-//     for (var j = 0; j < rows; j++) {
-//       // Count the number of live neighbors
-//       var neighbors = countNeighbors(grid, i, j);
-//       if (grid[i][j] === 0 /*&& neighbors > 1*/) {
-//         console.log("check boundary");
-//         // check boundary
-//         if (
-//           checkBoundary(
-//             i * resolution,
-//             j * resolution,
-//             resolution,
-//             resolution,
-//             bndry
-//           )
-//         ) {
-//           next[i][j] = 1;
-//         }
-//       }
-//       if (grid[i][j] == 1 /*&& neighbors > 1*/) {
-//         next[i][j] = 1;
-//       }
-//     }
-//   }
-//   console.log("set next");
-//   // Set the new grid as the current grid
-//   grid = next;
-// }
 
 function fillNeighbors(grid, next, x, y, bbox, n = 1) {
   for (var i = -n; i < n + 1; i++) {
