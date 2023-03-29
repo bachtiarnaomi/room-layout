@@ -1,3 +1,4 @@
+// import { offsetEdges } from './layout.js';
 // Set the size of the grid
 var colors = ['#B5E1DC', '#F5E68B', '#C5C5E2', '#ECB7E4', '#DBFCAD', '#FFCF9F'];
 var resolution = 10;
@@ -8,9 +9,7 @@ const state = {
   boundary: [],
   rooms,
   circulation: grid,
-  spaces: {
-    // list of polygons. This is the valid spaces within the department for the rooms
-  },
+  spaces: [],
 };
 
 function setup() {
@@ -24,23 +23,22 @@ function setup() {
   // bndry = createRandomBoundaries();
   // bndry = createRoomBoundaries();
   bbox = getBoundingBox(bndry);
-  state.spaces = offsetEdges([0, 1, 2], state);
-  state.spaces = getRemainingSpace(state);
   state.boundary = boundary;
   state.circulation = grid;
+  // state.spaces = offsetEdges([0, 1, 2], state);
+  // state.spaces = getRemainingSpace(state);
 
   // getStartingPoint(bbox, bndry, grid);
 }
 
-function createBoundary(width, height, canvasHeight, canvasWidth) {
+function createBoundary(w, h, canvasHeight, canvasWidth) {
   const boundary = {
-    pos: {
-      x: (canvasWidth - width) / 2,
-      y: (canvasHeight - height) / 2,
-    },
-    width,
-    height,
+    x: (canvasWidth - w) / 2,
+    y: (canvasHeight - h) / 2,
+    w,
+    h,
   };
+  console.log('the boundary', boundary);
   return boundary;
 }
 function getStartingPoint({ minX, minY, maxX, maxY }, bndry, grid) {
@@ -59,7 +57,8 @@ function getStartingPoint({ minX, minY, maxX, maxY }, bndry, grid) {
         j * resolution,
         resolution,
         resolution,
-        bndry
+        spaces,
+        boundary
       )
     ) {
       console.log(i, j);
@@ -193,6 +192,8 @@ function draw() {
   }
   drawBBOX(bbox);
   drawRect(boundary);
+
+  drawSpaces(spaces);
   // Set the new grid as the current grid
   grid = next;
   state.grid = next;
@@ -206,11 +207,11 @@ function drawBBOX({ minX, maxX, minY, maxY }) {
   rect(minX, minY, w, h);
   strokeWeight(1);
 }
-function drawRect({ pos, width, height }) {
+function drawRect({ x, y, w, h }) {
   noFill();
   strokeWeight(5);
   stroke(0);
-  rect(pos.x, pos.y, width, height);
+  rect(x, y, w, h);
   strokeWeight(1);
 }
 
@@ -247,7 +248,15 @@ function withinBBOX({ minX, minY, maxX, maxY }, i, j, resolution) {
   if (i > iStart && i < iEnd && j > jStart && j < jEnd) return true;
   return false;
 }
-function checkBoundary(x, y, w, h, boundaries) {
+function withinBoundary({ minX, minY, maxX, maxY }, i, j, resolution) {
+  let iStart = Math.floor(minX / resolution);
+  let jStart = Math.floor(minY / resolution);
+  let iEnd = Math.floor(maxX / resolution);
+  let jEnd = Math.floor(maxY / resolution);
+  if (i > iStart && i < iEnd && j > jStart && j < jEnd) return true;
+  return false;
+}
+function checkBoundary(x, y, w, h, spaces, boundary) {
   let pass = true;
   let verts = [
     [x, y],
@@ -255,7 +264,7 @@ function checkBoundary(x, y, w, h, boundaries) {
     [x + w, y + h],
     [x, y + h],
   ];
-  boundaries.forEach((o) => {
+  spaces.forEach((o) => {
     verts.forEach((v) => {
       if (v[0] > o.x && v[0] < o.x + o.w && v[1] > o.y && v[1] < o.y + o.h) {
         pass = false;
@@ -290,4 +299,37 @@ function countNeighborsN(grid, x, y, n) {
   }
   sum -= grid[x][y];
   return sum;
+}
+
+const spaces = [
+  {
+    x: 50,
+    y: 100,
+    w: 300,
+    h: 40,
+  },
+  {
+    x: 310,
+    y: 100,
+    w: 40,
+    h: 200,
+  },
+];
+
+function drawSpaces(spaces) {
+  fill(255);
+  spaces.forEach((space) => {
+    const { x, y, w, h } = space;
+    const points = [
+      { x: x, y: y },
+      { x: x + w, y: y },
+      { x: x + w, y: y + h },
+      { x: x, y: y + h },
+    ];
+    beginShape();
+    points.forEach((p) => {
+      vertex(p.x, p.y);
+    });
+    endShape();
+  });
 }

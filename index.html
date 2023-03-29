@@ -5,7 +5,14 @@
     <title>Sketch</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.8.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.8.0/addons/p5.dom.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.144.0/build/three.module.js"
+        }
+      }
+    </script>
+    <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
   </head>
   <body>
     <div id="content">
@@ -15,7 +22,8 @@
       <br />
     </div>
     <script src="rooms-from-soa.js"></script>
-    <script src="layout.js"></script>
+    <!-- <script ty src="./clipper/clipper-tools.js"></script> -->
+    <script type="module" src="layout.js"></script>
     <script src="sketch.js"></script>
   </body>
 </html>
