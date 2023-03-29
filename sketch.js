@@ -3,7 +3,8 @@
 var colors = ['#B5E1DC', '#F5E68B', '#C5C5E2', '#ECB7E4', '#DBFCAD', '#FFCF9F'];
 var resolution = 10;
 // Calculate the number of rows and columns in the grid based on the size of the canvas
-var rows, cols, grid, boundary;
+var rows, cols, grid, boundary, zones;
+const patient = { d: 50 };
 var bndry = [];
 const state = {
   boundary: [],
@@ -13,13 +14,18 @@ const state = {
 };
 
 function setup() {
-  createCanvas(400, 400);
+  createCanvas(800, 800);
   rows = height / resolution;
   cols = width / resolution;
   frameRate(100);
   // Initialize the grid with all zeroes
   grid = initGrid();
-  boundary = createBoundary(300, 200, height, width);
+  boundary = createBoundary(
+    getRandomInt(100, 600),
+    getRandomInt(100, 600),
+    height,
+    width
+  );
   // bndry = createRandomBoundaries();
   // bndry = createRoomBoundaries();
   bbox = getBoundingBox(bndry);
@@ -41,6 +47,7 @@ function createBoundary(w, h, canvasHeight, canvasWidth) {
   console.log('the boundary', boundary);
   return boundary;
 }
+
 function getStartingPoint({ minX, minY, maxX, maxY }, bndry, grid) {
   let placed = false;
   let iStart = Math.floor(minX / resolution);
@@ -164,39 +171,125 @@ function draw() {
         fill(255);
       }
       stroke(0);
+      strokeWeight(1);
       rect(i * resolution, j * resolution, resolution, resolution);
     }
   }
-  fill('red');
-  bndry.forEach((o) => {
-    let { x, y, w, h } = o;
-    rect(x, y, w, h);
-  });
-  // Create a new grid to hold the updated cell values
-  var next = new Array(cols);
-  for (var i = 0; i < cols; i++) {
-    next[i] = new Array(rows).fill(0); // creates a new array
+
+  drawRect(boundary);
+  drawPatientZone(boundary, patient);
+  drawPatientRooms(boundary, patient);
+  drawSupportZone(boundary, patient);
+  drawCorridor(boundary, patient);
+  drawCrossCorridor(boundary, patient);
+
+  // drawSpaces(spaces);
+  // Set the new grid as the current grid
+}
+function drawSupportZone({ x, y, w, h }, { d }) {
+  fill('green');
+  if (h > w) {
+    rect(x + d, y, w - 2 * d, h);
+  } else {
+    rect(x, y + d, w, h - 2 * d);
   }
-  // Calculate the new cell values
-  for (var i = 0; i < cols; i++) {
-    for (var j = 0; j < rows; j++) {
-      // Count the number of live neighbors
-      // var neighbors = countNeighborsN(grid, i, j, 3); // count 5 cells
-      if (grid[i][j] === 1 /*&& neighbors > 1*/) {
-        fillNeighbors(grid, next, i, j, bbox);
-      }
-      if (grid[i][j] == 1 /*&& neighbors > 1*/) {
-        next[i][j] = 1;
-      }
+}
+function drawCorridor({ x, y, w, h }, { d }) {
+  strokeWeight(12);
+  stroke(0);
+  strokeCap(SQUARE);
+  d += 1.5;
+  if (h > w) {
+    line(x + d, y, x + d, y + h);
+    line(x + w - d, y, x + w - d, y + h);
+    strokeWeight(8);
+    stroke(255);
+    line(x + d, y, x + d, y + h);
+    line(x + w - d, y, x + w - d, y + h);
+  } else {
+    line(x, y + d, x + w, y + d);
+    line(x, y + h - d, x + w, y + h - d);
+    strokeWeight(8);
+    stroke(255);
+    line(x, y + d, x + w, y + d);
+    line(x, y + h - d, x + w, y + h - d);
+  }
+}
+function drawCrossCorridor({ x, y, w, h }, { d }) {
+  const threshold = 120;
+  strokeWeight(12);
+  stroke(0);
+  strokeCap(SQUARE);
+  d += 5;
+  if (h > w && h > threshold) {
+    const n = Math.floor(h / threshold);
+    const zoneWidth = h / n;
+    for (let i = 0; i < n - 1; i++) {
+      strokeWeight(12);
+      stroke(0);
+      line(x + d, y + zoneWidth * (i + 1), x + w - d, y + zoneWidth * (i + 1));
+      strokeWeight(8);
+      stroke(255);
+      line(x + d, y + zoneWidth * (i + 1), x + w - d, y + zoneWidth * (i + 1));
+    }
+  } else {
+    const n = Math.floor(w / threshold);
+    const zoneWidth = w / n;
+    for (let i = 0; i < n - 1; i++) {
+      strokeWeight(12);
+      stroke(0);
+      line(x + zoneWidth * (i + 1), y + d, x + zoneWidth * (i + 1), y + h - d);
+      strokeWeight(8);
+      stroke(255);
+      line(x + zoneWidth * (i + 1), y + d, x + zoneWidth * (i + 1), y + h - d);
+      // line(x + d, y + threshold * (i + 1), x + w - d, y + threshold * (i + 1));
     }
   }
-  drawBBOX(bbox);
-  drawRect(boundary);
+}
+function drawPatientZone({ x, y, w, h }, { d }) {
+  stroke(0);
+  rect(x, y, w, h);
 
-  drawSpaces(spaces);
-  // Set the new grid as the current grid
-  grid = next;
-  state.grid = next;
+  fill(34, 155, 215);
+  if (h > w) {
+    rect(x, y, d, h);
+    rect(x + w - d, y, d, h);
+  } else {
+    rect(x, y, w, d);
+    rect(x, y + h - d, w, d);
+  }
+}
+function drawPatientRooms({ x, y, w, h }, { d }) {
+  stroke(0);
+  strokeWeight(3);
+  rect(x, y, w, h);
+
+  fill(34, 155, 215);
+  if (h > w) {
+    rect(x, y, d, h);
+    rect(x + w - d, y, d, h);
+    const rect1 = { x: x, y: y, w: d, h: h };
+    const rect2 = { x: x + w - d, y: y, w: d, h: h };
+    let left = h;
+    let currY = 0;
+    while (left >= 50) {
+      line(rect1.x, rect1.y + currY, rect1.x + rect1.w, rect1.y + currY);
+      line(rect2.x, rect2.y + currY, rect2.x + rect2.w, rect2.y + currY);
+      left -= 50;
+      currY += 50;
+    }
+  } else {
+    const rect1 = { x: x, y: y, w: w, h: d };
+    const rect2 = { x: x, y: y + h - d, w: w, h: d };
+    let left = w;
+    let currX = 0;
+    while (left >= 50) {
+      line(rect1.x + currX, rect1.y, rect1.x + currX, rect1.y + rect1.h);
+      line(rect2.x + currX, rect2.y, rect2.x + currX, rect2.y + rect2.h);
+      left -= 50;
+      currX += 50;
+    }
+  }
 }
 function drawBBOX({ minX, maxX, minY, maxY }) {
   let w = maxX - minX;
