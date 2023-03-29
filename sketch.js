@@ -2,21 +2,47 @@
 var colors = ['#B5E1DC', '#F5E68B', '#C5C5E2', '#ECB7E4', '#DBFCAD', '#FFCF9F'];
 var resolution = 10;
 // Calculate the number of rows and columns in the grid based on the size of the canvas
-var rows, cols, grid, bndry;
+var rows, cols, grid, boundary;
+var bndry = [];
+const state = {
+  boundary: [],
+  rooms,
+  circulation: grid,
+  spaces: {
+    // list of polygons. This is the valid spaces within the department for the rooms
+  },
+};
+
 function setup() {
   createCanvas(400, 400);
   rows = height / resolution;
   cols = width / resolution;
   frameRate(100);
-  // Initialize the grid with random values
-  grid = createRandomGrid();
+  // Initialize the grid with all zeroes
+  grid = initGrid();
+  boundary = createBoundary(300, 200, height, width);
   // bndry = createRandomBoundaries();
-  bndry = createRoomBoundaries();
+  // bndry = createRoomBoundaries();
   bbox = getBoundingBox(bndry);
-  bbox, bndry, grid;
-  getStartingPoint(bbox, bndry, grid);
+  state.spaces = offsetEdges([0, 1, 2], state);
+  state.spaces = getRemainingSpace(state);
+  state.boundary = boundary;
+  state.circulation = grid;
+
+  // getStartingPoint(bbox, bndry, grid);
 }
 
+function createBoundary(width, height, canvasHeight, canvasWidth) {
+  const boundary = {
+    pos: {
+      x: (canvasWidth - width) / 2,
+      y: (canvasHeight - height) / 2,
+    },
+    width,
+    height,
+  };
+  return boundary;
+}
 function getStartingPoint({ minX, minY, maxX, maxY }, bndry, grid) {
   let placed = false;
   let iStart = Math.floor(minX / resolution);
@@ -41,8 +67,8 @@ function getStartingPoint({ minX, minY, maxX, maxY }, bndry, grid) {
     }
   }
 }
-// Create a random grid with either a 0 or 1 at each position
-function createRandomGrid() {
+// Create grid with all zeroes
+function initGrid() {
   var grid = new Array(cols);
   for (var i = 0; i < cols; i++) {
     grid[i] = new Array(rows);
@@ -67,7 +93,6 @@ function getBoundingBox(arr) {
     }
     if (y + h > maxY) maxY = y + h;
   });
-  console.log('bbox', minX, maxX, minY, maxY);
   return { minX, maxX, minY, maxY };
 }
 
@@ -159,7 +184,6 @@ function draw() {
       // Count the number of live neighbors
       // var neighbors = countNeighborsN(grid, i, j, 3); // count 5 cells
       if (grid[i][j] === 1 /*&& neighbors > 1*/) {
-        console.log('fill');
         fillNeighbors(grid, next, i, j, bbox);
       }
       if (grid[i][j] == 1 /*&& neighbors > 1*/) {
@@ -167,10 +191,11 @@ function draw() {
       }
     }
   }
-  console.log('set next');
-  // Set the new grid as the current grid
   drawBBOX(bbox);
+  drawRect(boundary);
+  // Set the new grid as the current grid
   grid = next;
+  state.grid = next;
 }
 function drawBBOX({ minX, maxX, minY, maxY }) {
   let w = maxX - minX;
@@ -179,6 +204,13 @@ function drawBBOX({ minX, maxX, minY, maxY }) {
   strokeWeight(5);
   stroke(0);
   rect(minX, minY, w, h);
+  strokeWeight(1);
+}
+function drawRect({ pos, width, height }) {
+  noFill();
+  strokeWeight(5);
+  stroke(0);
+  rect(pos.x, pos.y, width, height);
   strokeWeight(1);
 }
 
