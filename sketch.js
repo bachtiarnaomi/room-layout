@@ -1,9 +1,12 @@
 // import { offsetEdges } from './layout.js';
 // Set the size of the grid
+
 var colors = ['#B5E1DC', '#F5E68B', '#C5C5E2', '#ECB7E4', '#DBFCAD', '#FFCF9F'];
 var resolution = 10;
 // Calculate the number of rows and columns in the grid based on the size of the canvas
 var rows, cols, grid, boundary, zones;
+var rooms = [];
+var support = [];
 const patient = { d: 50 };
 var bndry = [];
 const state = {
@@ -21,20 +24,71 @@ function setup() {
   // Initialize the grid with all zeroes
   grid = initGrid();
   boundary = createBoundary(
-    getRandomInt(100, 600),
-    getRandomInt(100, 600),
+    getRandomInt(100, 400),
+    getRandomInt(100, 400),
     height,
     width
   );
+  // boundary = assignRandomOverlap(boundary);
+  rooms = createRooms(boundary, patient);
+  support = createSupport(boundary, patient);
+  console.log('support', support);
+
   // bndry = createRandomBoundaries();
   // bndry = createRoomBoundaries();
   bbox = getBoundingBox(bndry);
   state.boundary = boundary;
   state.circulation = grid;
+
   // state.spaces = offsetEdges([0, 1, 2], state);
   // state.spaces = getRemainingSpace(state);
 
   // getStartingPoint(bbox, bndry, grid);
+}
+
+function assignRandomOverlap(boundary) {
+  console.log('boundary', boundary);
+  boundary.overlap = { edge: [0, 1], length: [boundary.w / 3, boundary.h] };
+  return boundary;
+}
+
+function createRooms(boundary, patient) {
+  console.log('create rooms');
+  const perimeterZones = getPerimeterZones(boundary, patient.d);
+  const rooms = divideZones(perimeterZones, 50);
+  return rooms;
+}
+
+function createSupport(boundary, { d }) {
+  const { x, y, w, h } = boundary;
+  if (w >= h) {
+    const zone = {
+      x: x + 30,
+      y: y + d + 30,
+      w: w - 2 * 30,
+      h: h - 2 * (d + 30),
+    };
+    if (zone.w > 150) {
+      const divided = divideZoneHorizontally(zone, 150, true, 30);
+      return divided;
+    }
+  } else if (h > w) {
+    const zone = {
+      x: x + d + 30,
+      y: y + 30,
+      w: w - 2 * (d + 30),
+      h: h - 2 * 30,
+    };
+    if (w < 0) {
+      console.log('width too small', w);
+      return [];
+    }
+    if (zone.h > 150) {
+      const divided = divideZoneVertically(zone, 150, true, 30);
+      return divided;
+    }
+  }
+  return [];
 }
 
 function createBoundary(w, h, canvasHeight, canvasWidth) {
@@ -176,18 +230,20 @@ function draw() {
     }
   }
 
+  // drawPatientZone(boundary, patient);
+  // drawPatientRooms(boundary, patient);
+  // drawSupportZone(boundary, patient);
+  // drawCorridor(boundary, patient);
+  // drawCrossCorridor(boundary, patient);
   drawRect(boundary);
-  drawPatientZone(boundary, patient);
-  drawPatientRooms(boundary, patient);
-  drawSupportZone(boundary, patient);
-  drawCorridor(boundary, patient);
-  drawCrossCorridor(boundary, patient);
+  placeRooms(rooms);
+  placeRooms(support);
 
   // drawSpaces(spaces);
   // Set the new grid as the current grid
 }
 function drawSupportZone({ x, y, w, h }, { d }) {
-  fill('green');
+  fill('#C5C5E2');
   if (h > w) {
     rect(x + d, y, w - 2 * d, h);
   } else {
@@ -250,7 +306,7 @@ function drawPatientZone({ x, y, w, h }, { d }) {
   stroke(0);
   rect(x, y, w, h);
 
-  fill(34, 155, 215);
+  fill('#A88AE8');
   if (h > w) {
     rect(x, y, d, h);
     rect(x + w - d, y, d, h);
@@ -260,11 +316,9 @@ function drawPatientZone({ x, y, w, h }, { d }) {
   }
 }
 function drawPatientRooms({ x, y, w, h }, { d }) {
-  stroke(0);
+  stroke('#333333');
   strokeWeight(3);
   rect(x, y, w, h);
-
-  fill(34, 155, 215);
   if (h > w) {
     rect(x, y, d, h);
     rect(x + w - d, y, d, h);
@@ -425,4 +479,135 @@ function drawSpaces(spaces) {
     });
     endShape();
   });
+}
+
+function placeRooms(rooms) {
+  strokeWeight(4);
+  stroke('purple');
+  for (const room of rooms) {
+    rect(room.x, room.y, room.w, room.h);
+  }
+  //p5.rect
+}
+function divideZoneByLine(zone, line) {
+  if (line[0].x == line[1].x) {
+    console.log('vertical line');
+    if (zone.x < line[0].x && line[0].x < zone.x + zone.w) {
+      if (zone.y >= line[0].y && zone.y + h <= line[1].y) {
+        const zone1 = {
+          x: zone.x,
+          y: zone.y,
+          w: line[0].x - zone.x,
+          h: zone.h,
+        };
+        const zone2 = {
+          x: line[0].x,
+          y: y,
+          w: zone.x + zone.w - line[0].x,
+          h: zone.h,
+        };
+        return [zone1, zone2];
+      }
+    }
+  } else if (line[0].y == line[1].y) {
+    console.log('horizontal line');
+    if (zone.y < line[0].y && line[0].y < zone.y + zone.h) {
+      if (zone.x >= line[0].x && zone.x + h <= line[1].x) {
+        const zone1 = {
+          x: zone.x,
+          y: zone.y,
+          w: zone.w,
+          h: line[0].y - zone.y,
+        };
+        const zone2 = {
+          x: zone.x,
+          y: line[0].y,
+          w: zone.w,
+          h: zone.y + zone.h - line[0].y,
+        };
+        return [zone1, zone2];
+      }
+    }
+  }
+  console.log('not cut');
+  return [zone];
+}
+
+function getPerimeterZones(department, d) {
+  console.log('dept', department);
+  const { x, y, w, h } = department;
+  if (w >= h) {
+    const zone1 = { x, y, w, h: d };
+    const zone2 = { x, y: y + h - d, w, h: d };
+    return [zone1, zone2];
+  }
+  if (h > w) {
+    const zone1 = { x, y, w: d, h };
+    const zone2 = { x: x + w - d, y, w: d, h };
+    return [zone1, zone2];
+  }
+
+  // find if any of the edges touch other departments.
+  // find overlap.
+}
+
+function divideZones(zones, dist) {
+  console.log('divide zones', zones);
+  const rooms = [];
+  for (const zone of zones) {
+    const { x, y, w, h } = zone;
+    if (w >= h) {
+      rooms.push(...divideZoneHorizontally(zone, dist));
+    }
+    if (h > w) {
+      rooms.push(...divideZoneVertically(zone, dist));
+    }
+  }
+  return rooms;
+}
+
+function divideZoneHorizontally(zone, width, leftover = false, gap = 0) {
+  console.log('divide horizontally', zone, gap);
+  if (zone.h < 0) return [];
+  const zones = [];
+  const n = Math.floor(zone.w / width);
+  let currX = zone.x;
+  for (let i = 0; i < n; i++) {
+    const o = { x: currX, y: zone.y, w: width, h: zone.h };
+    if (i != 0 && i != n - 1) {
+      o.x = o.x + gap / 2;
+      o.w = o.w - gap / 2;
+    }
+    zones.push(o);
+    currX += width;
+  }
+  if (leftover) {
+    const left = zone.x + zone.w - currX;
+    console.log('left', left);
+    zones[zones.length - 1].w = zones[zones.length - 1].w + left;
+  }
+  return zones;
+  // provide either dist or n
+}
+function divideZoneVertically(zone, height, leftover = false, gap = 0) {
+  console.log('divide vertically', zone);
+  if (zone.w < 0) return [];
+  const zones = [];
+  const n = Math.floor(zone.h / height);
+  let currY = zone.y;
+  for (let i = 0; i < n; i++) {
+    const o = { x: zone.x, y: currY, w: zone.w, h: height };
+    zones.push(o);
+    currY += height;
+    if (i != 0) {
+      o.y = o.y + gap / 2;
+      o.h = o.h - gap / 2;
+    }
+  }
+  if (leftover) {
+    const left = zone.y + zone.h - currY;
+    console.log('left', left);
+    zones[zones.length - 1].h = zones[zones.length - 1].h + left;
+  }
+  return zones;
 }

@@ -1,4 +1,4 @@
-const rooms = [
+const roomsList = [
   {
     width: 236.2204724409449,
     height: 196.8503937007874,
